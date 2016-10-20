@@ -1,24 +1,15 @@
-#include "temp.h"
-#include "ui_temp.h"
+#include "spectrumcontroller.h"
 
-Temp::Temp(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::Temp)
+SpectrumController::SpectrumController(QObject *parent) : QObject(parent)
 {
-    ui->setupUi(this);
-    connect(&probe,&QAudioProbe::audioBufferProbed,this,&Temp::on_audioBeenBuffered);
-    connect(&fft,&QThread::finished,this,&Temp::on_specAvailable);
-    probe.setSource(&player);
-    counter = 0;
+    display = new SpectrumDisplay("");
     isRunning = false;
+    connect(&fft,&QThread::finished,this,&SpectrumController::on_specAvailable);
+    display->setScaleFactor(FFTSize);
 }
 
-Temp::~Temp()
-{
-    delete ui;
-}
 
-void Temp::on_audioBeenBuffered(QAudioBuffer buffer){
+void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
 
     // Only process stereo frames
     if (buffer.format().channelCount() != 2) return;
@@ -27,7 +18,7 @@ void Temp::on_audioBeenBuffered(QAudioBuffer buffer){
 
     if (buffer.format().sampleType() == QAudioFormat::SignedInt){
 
-        qWarning() << "Signed data" << counter; counter++;
+        //qWarning() << "Signed data" << counter; counter++;
         switch (buffer.format().sampleSize()){
         case 32:
             peak = INT_MAX;
@@ -39,12 +30,11 @@ void Temp::on_audioBeenBuffered(QAudioBuffer buffer){
             peak = CHAR_MAX;
             break;
         }
-        peak = 1;
 
         QAudioBuffer::S16S *data = buffer.data<QAudioBuffer::S16S>();
 
         for (qint32 i = 0; i < buffer.frameCount(); i++){
-            currentBuffer.append(data[i].left/peak);
+            currentBuffer.append(data[i].left);
             if (currentBuffer.size() == FFTSize){
                 //qWarning() << "Adding to data buffer";
                 dataBuffer << currentBuffer;
@@ -103,22 +93,24 @@ void Temp::on_audioBeenBuffered(QAudioBuffer buffer){
 
 }
 
-void Temp::processBuffer(){
+void SpectrumController::processBuffer(){
     if (!dataBuffer.isEmpty()){
         if (!isRunning){
             fft.setInput(dataBuffer.first());
             dataBuffer.removeFirst();
+            //qWarning() << "Data buffer size" << dataBuffer.size();
             fft.start();
             isRunning = true;
         }
     }
 }
 
-void Temp::on_specAvailable(){
+void SpectrumController::on_specAvailable(){
 
     //qWarning() << "Spec available";
 
     QVector<qreal> mod = fft.getDFTResult().getAbsMod();
+    display->setSpectrum(mod.mid(0,mod.size()/2));
 
 //    std::cout << counter << ":";
 //    for (qint32 i = 0; i < mod.size(); i++){
@@ -129,24 +121,9 @@ void Temp::on_specAvailable(){
 
 //    counter++;
 
-    QString show;
-    for (qint32 i = 0; i < mod.size()/2; i++){
-        qint32 val = mod.at(i);
-        show = show + QString::number(val) + " ";
-    }
-
-    ui->lineEdit->setText(show);
-
     isRunning = false;
     processBuffer();
 
 }
 
-void Temp::on_pushButton_clicked()
-{
-    //player.setMedia(QUrl::fromLocalFile("/home/ariela/Music/2009 - Babylon/09 - Promised Land.mp3"));
-    player.setMedia(QUrl::fromLocalFile("/home/ariel/Workspace/02  Air Supply - GH 2000 - All Out Of Love.mp3"));
-    player.play();
-    qWarning() << "A ver si se reproduce: " << player.mediaStatus();
-    qWarning() << "Player state" << player.state();
-}
+

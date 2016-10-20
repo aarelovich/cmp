@@ -5,6 +5,7 @@
 #include <QAudioProbe>
 #include <QAudioBuffer>
 #include <QMediaPlayer>
+#include <iostream>
 
 #include "dftengine.h"
 
@@ -27,16 +28,21 @@ private slots:
 
 private:
 
-    const quint64 FFTSize = 64;
+    const qint32 FFTSize = 64;
 
     Ui::Temp *ui;
     QAudioProbe probe;
     QMediaPlayer player;
 
-    QVector<ComplexVectorPointer> dataBuffer;
-    ComplexVectorPointer currentBuffer;
+    QVector<RealVector> dataBuffer;
+    RealVector currentBuffer;
+    bool isRunning;
+
+    quint64 counter;
 
     DFTEngine fft;
+
+    void processBuffer();
 
 };
 
