@@ -1,13 +1,27 @@
 #include "spectrumcontroller.h"
 
-SpectrumController::SpectrumController(QObject *parent) : QObject(parent)
+SpectrumController::SpectrumController()
 {
     display = new SpectrumDisplay("");
     isRunning = false;
-    connect(&fft,&QThread::finished,this,&SpectrumController::on_specAvailable);
     display->setScaleFactor(FFTSize);
+
 }
 
+void SpectrumController::run(){
+    if (!dataBuffer.isEmpty()){
+        isRunning = true;
+
+        fft.setInput(dataBuffer.first());
+        dataBuffer.removeFirst();
+        fft.doDFT();
+
+        QVector<qreal> mod = fft.getDFTResult().getAbsMod();
+        display->setSpectrum(mod.mid(0,mod.size()/2));
+
+        isRunning = false;
+    }
+}
 
 void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
 
@@ -34,14 +48,14 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
         QAudioBuffer::S16S *data = buffer.data<QAudioBuffer::S16S>();
 
         for (qint32 i = 0; i < buffer.frameCount(); i++){
-            currentBuffer.append(data[i].left);
+            currentBuffer << data[i].left/peak;
             if (currentBuffer.size() == FFTSize){
-                //qWarning() << "Adding to data buffer";
                 dataBuffer << currentBuffer;
                 currentBuffer.clear();
-                //qWarning() << "All clear";
+                if (!isRunning) run();
             }
         }
+
 
     }
     else if (buffer.format().sampleType() == QAudioFormat::UnSignedInt){
@@ -64,10 +78,10 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
 
         for (qint32 i = 0; i < buffer.frameCount(); i++){
             currentBuffer.append(data[i].left/peak);
-            if (currentBuffer.size() == FFTSize){
-                dataBuffer << currentBuffer;
-                currentBuffer.clear();
-            }
+//            if (currentBuffer.size() == FFTSize){
+//                dataBuffer << currentBuffer;
+//                currentBuffer.clear();
+//            }
         }
 
     }
@@ -89,41 +103,10 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
 
     }
 
-    processBuffer();
+
 
 }
 
-void SpectrumController::processBuffer(){
-    if (!dataBuffer.isEmpty()){
-        if (!isRunning){
-            fft.setInput(dataBuffer.first());
-            dataBuffer.removeFirst();
-            //qWarning() << "Data buffer size" << dataBuffer.size();
-            fft.start();
-            isRunning = true;
-        }
-    }
-}
 
-void SpectrumController::on_specAvailable(){
-
-    //qWarning() << "Spec available";
-
-    QVector<qreal> mod = fft.getDFTResult().getAbsMod();
-    display->setSpectrum(mod.mid(0,mod.size()/2));
-
-//    std::cout << counter << ":";
-//    for (qint32 i = 0; i < mod.size(); i++){
-//         std::cout << mod.at(i);
-//    }
-//    std::cout << std::endl;
-//    std::cout << std::endl;
-
-//    counter++;
-
-    isRunning = false;
-    processBuffer();
-
-}
 
 

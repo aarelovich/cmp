@@ -1,22 +1,21 @@
 #ifndef SPECTRUMCONTROLLER_H
 #define SPECTRUMCONTROLLER_H
 
-#include <QObject>
+#include <QThread>
 #include <QAudioBuffer>
 #include "spectrumdisplay.h"
 
-class SpectrumController : public QObject
+class SpectrumController : public QThread
 {
     Q_OBJECT
 public:
-    explicit SpectrumController(QObject *parent = 0);
+    explicit SpectrumController();
     SpectrumDisplay *getSpectrumDisplay(){return display;}
     void setAudioBuffer(QAudioBuffer buffer);
 
-signals:
+    void run();
 
-public slots:    
-    void on_specAvailable();
+signals:
 
 private:
 
@@ -29,7 +28,7 @@ private:
 
     SpectrumDisplay *display;
 
-    void processBuffer();
+
 };
 
 #endif // SPECTRUMCONTROLLER_H

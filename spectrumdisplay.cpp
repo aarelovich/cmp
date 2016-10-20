@@ -6,7 +6,7 @@ SpectrumDisplay::SpectrumDisplay(QString ID, ColoUiSignalManager *ss):ColoUiElem
 
 void SpectrumDisplay::setConfiguration(ColoUiConfiguration c){
     ColoUiElement::setConfiguration(c);
-    numberOfBars = 64;
+    numberOfBars = 128;
     qreal K = 10;
     barSpace = this->w/(K*numberOfBars + numberOfBars + 1);
     barWidth = K*barSpace;
@@ -21,6 +21,8 @@ void SpectrumDisplay::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
     // Background
     painter->setBrush(QBrush(QColor(Qt::black)));
     painter->drawRect(boundingBox);
+
+    //qWarning() << "Spectrum size" << spectrum.size();
 
     if (spectrum.size() < numberOfBars) return;
 

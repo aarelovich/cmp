@@ -30,6 +30,7 @@ SOURCES += main.cpp \
     /home/ariel/repos/ColoUiDev/coloUi/colouiplaceholder.cpp \
     /home/ariel/repos/ColoUiDev/coloUi/colouikeyboard.cpp \
     /home/ariel/repos/ColoUiDev/coloUi/colouiview.cpp \
+    /home/ariel/repos/ColoUiDev/coloUi/colouilineedit.cpp \
     colouiwindow.cpp \
     spectrumdisplay.cpp \
     dftengine.cpp \
@@ -55,6 +56,7 @@ HEADERS += \
     /home/ariel/repos/ColoUiDev/coloUi/colouiplaceholder.h \
     /home/ariel/repos/ColoUiDev/coloUi/colouikeyboard.h \
     /home/ariel/repos/ColoUiDev/coloUi/colouiview.h \
+    /home/ariel/repos/ColoUiDev/coloUi/colouilineedit.h \
     colouiwindow.h \
     elements.h \
     spectrumdisplay.h \

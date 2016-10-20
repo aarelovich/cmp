@@ -3,7 +3,7 @@
 ColoUiWindow::ColoUiWindow(QWidget *parent) : QMainWindow(parent)
 {
 
-    //connect(&probe,&QAudioProbe::audioBufferProbed,this,&ColoUiWindow::on_audioBeenBuffered);
+    connect(&probe,&QAudioProbe::audioBufferProbed,this,&ColoUiWindow::on_audioBeenBuffered);
     probe.setSource(&player);
 
 }

@@ -1,14 +1,13 @@
 #ifndef DFTENGINE_H
 #define DFTENGINE_H
 
-#include <QThread>
 #include <QtMath>
 #include <QVector>
 #include <QTextStream>
 #include <QFile>
 #include <QDebug>
 #include <QHash>
-#define     PI           3.14159265358979323846
+#define     PI_VAL          3.14159265358979323846
 
 struct ComplexVectorPointer{
 
@@ -58,17 +57,15 @@ struct ComplexVectorPointer{
 
 typedef QVector<qreal> RealVector;
 
-class DFTEngine : public QThread
+class DFTEngine
 {
 public:
     DFTEngine();
 
-
-    void run();
-
     // Appending the data
     void setInput(const RealVector &v);
     ComplexVectorPointer getDFTResult(){return dft;}
+    void doDFT() {dft.clear(); dft = calcDFT(input);}
     ComplexVectorPointer calcDFT(ComplexVectorPointer x);
 
 private:

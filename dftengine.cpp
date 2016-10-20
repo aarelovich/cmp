@@ -4,11 +4,6 @@ DFTEngine::DFTEngine()
 {
 }
 
-void DFTEngine::run(){
-    dft.clear();
-    dft = calcDFT(input);
-}
-
 void  DFTEngine::setInput(const RealVector &v){
     input.clear();
     for (qint32 i = 0; i < v.size(); i++){
@@ -39,7 +34,7 @@ ComplexVectorPointer DFTEngine::calcDFT(ComplexVectorPointer x){
 
     ComplexVectorPointer final;
 
-    qreal alpha = -2*PI/N;
+    qreal alpha = -2*PI_VAL/N;
 
     // Calculating product of twiddle factor only once
     QVector<qreal> WOr;
