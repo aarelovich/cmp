@@ -77,11 +77,12 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
         QAudioBuffer::S16U *data = buffer.data<QAudioBuffer::S16U>();
 
         for (qint32 i = 0; i < buffer.frameCount(); i++){
-            currentBuffer.append(data[i].left/peak);
-//            if (currentBuffer.size() == FFTSize){
-//                dataBuffer << currentBuffer;
-//                currentBuffer.clear();
-//            }
+            currentBuffer << data[i].left/peak;
+            if (currentBuffer.size() == FFTSize){
+                dataBuffer << currentBuffer;
+                currentBuffer.clear();
+                if (!isRunning) run();
+            }
         }
 
     }
@@ -93,10 +94,11 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
         QAudioBuffer::S32F *data = buffer.data<QAudioBuffer::S32F>();
 
         for (qint32 i = 0; i < buffer.frameCount(); i++){
-            currentBuffer.append(data[i].left/peak);
+            currentBuffer << data[i].left/peak;
             if (currentBuffer.size() == FFTSize){
                 dataBuffer << currentBuffer;
                 currentBuffer.clear();
+                if (!isRunning) run();
             }
         }
 
