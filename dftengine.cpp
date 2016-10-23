@@ -11,7 +11,76 @@ void  DFTEngine::setInput(const RealVector &v){
     }
 }
 
-ComplexVectorPointer DFTEngine::calcDFT(ComplexVectorPointer x){
+ComplexVector DFTEngine::vonHannWindow(int start, int end){
+
+    if (end == -1){
+        end = dft.size();
+    }
+
+    ComplexVector res;
+    if (dft.size() < 2) return res;
+    if (end - start < 2) return res;
+
+    // First value
+    res.real << 0.5*dft.real.at(start) - 0.25*dft.real.at(start+1);
+    res.imag << 0.5*dft.imag.at(start) - 0.25*dft.imag.at(start+1);
+    if (start > 0){
+        res.real[0] = res.real.at(0) - 0.25*dft.real.at(start-1);
+        res.imag[0] = res.imag.at(0) - 0.25*dft.imag.at(start-1);
+    }
+
+    for (qint32 i = start+1; i < end-1; i++){
+        res.real << 0.5*dft.real.at(i) - 0.25*dft.real.at(i-1) - 0.25*dft.real.at(i+1);
+        res.imag << 0.5*dft.imag.at(i) - 0.25*dft.imag.at(i-1) - 0.25*dft.imag.at(i+1);
+    }
+
+    // Last value
+    res.real << 0.5*dft.real.at(end) - 0.25*dft.real.at(end-1);
+    res.imag << 0.5*dft.imag.at(end) - 0.25*dft.imag.at(end-1);
+    qint32 last = res.real.size()-1;
+    if (end <  (qint32)dft.size()-1){
+        res.real[last] = res.real.at(last) - 0.25*dft.real.at(end+1);
+        res.imag[last] = res.imag.at(last) - 0.25*dft.imag.at(end+1);
+    }
+
+    return res;
+
+}
+
+RealVector DFTEngine::getModuleInBins(qint32 NBins){
+
+    // Windowing the real proyection.
+    ComplexVector windowed = vonHannWindow(0,dft.size()/2);
+    if (windowed.size() == 0) return RealVector();
+
+
+    // Check that the number of bins perfectly divides the number of bars
+    if ((windowed.size() % NBins) != 0) return RealVector();
+
+    qint32 barsInBin = windowed.size()/NBins;
+
+    qreal avg = 0;
+    qreal barCounter = 0;
+    RealVector result;
+    for (quint32 i = 0; i < windowed.size(); i++){
+        //qDebug() << "Abs mod" << (qAbs(windowed.imag.at(i)) + qAbs(windowed.real.at(i)));
+        avg = avg + qAbs(windowed.imag.at(i)) + qAbs(windowed.real.at(i));
+        barCounter++;
+        if (barCounter == barsInBin){
+            result << avg/barCounter;
+            barCounter = 0;
+            avg = 0;
+        }
+    }
+
+
+
+    return result;
+
+}
+
+
+ComplexVector DFTEngine::calcDFT(ComplexVector x){
 
     //qWarning() << "DFT Start";
 
@@ -19,8 +88,8 @@ ComplexVectorPointer DFTEngine::calcDFT(ComplexVectorPointer x){
     quint64 N = x.size();
     quint64 M = N/2;
 
-    ComplexVectorPointer even;
-    ComplexVectorPointer odd;
+    ComplexVector even;
+    ComplexVector odd;
 
     for (quint64 j = 0; j < M; j++){
         even.real << x.real.at(2*j);
@@ -32,7 +101,7 @@ ComplexVectorPointer DFTEngine::calcDFT(ComplexVectorPointer x){
     even = calcDFT(even);
     odd = calcDFT(odd);
 
-    ComplexVectorPointer final;
+    ComplexVector final;
 
     qreal alpha = -2*PI_VAL/N;
 
@@ -72,72 +141,3 @@ ComplexVectorPointer DFTEngine::calcDFT(ComplexVectorPointer x){
 
 }
 
-//void DFTEngine::prepare(qint32 twoExponent){
-
-//    quint64 N = 2 << (twoExponent-1);
-//    Ns = N;
-//    quint64 M = N/2;
-
-//    twiddleFactors.clear();
-
-//    qreal expr = 2*PI/N;
-
-//    for (quint64 i = 0; i < M; i++){
-//        *twiddleFactors.real << qCos(expr*i);
-//        *twiddleFactors.imag << qSin(expr*i);
-//    }
-
-
-//    for (quint64 i = 0; i < M; i++){
-//        *twiddleFactors.real << -twiddleFactors.real.at(i);
-//        *twiddleFactors.imag << -twiddleFactors.imag.at(i);
-//    }
-
-//    bitReversal.clear();
-
-//    for (quint64 i = 0; i < N; i++){
-//        bitReversal << reverseBitsOnN(i,twoExponent);
-//    }
-
-//}
-
-//quint64 DFTEngine::reverseBitsOnN(quint64 value, quint64 N){
-
-//    quint64 resvalue = 0;
-//    for (quint64 i = 0; i < N; i++){
-//        if ((value % 2) != 0) resvalue++;
-//        if (i < N-1){
-//        resvalue = resvalue << 1;
-//        value = value >> 1;
-//        }
-//    }
-//    return resvalue;
-
-//}
-
-//void DFTEngine::printComplexVectorPointer(ComplexVectorPointer cvp, QString file){
-
-//    quint64 s = cvp.size();
-
-//    QFile f(file);
-//    if (!f.open(QFile::WriteOnly)){
-//        return;
-//    }
-
-//    QTextStream writer(&f);
-
-//    for (quint64 i = 0; i < s; i++){
-//        writer << cvp.getStringRepresentantionAt(i) << "\n";
-//    }
-
-//    f.close();
-
-//}
-
-//void DFTEngine::printBitReversalTable(){
-
-//    for (qint32 i = 0; i < bitReversal.size(); i++){
-//        qWarning() << i << " --- " << bitReversal.at(i);
-//    }
-
-//}

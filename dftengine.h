@@ -9,9 +9,9 @@
 #include <QHash>
 #define     PI_VAL          3.14159265358979323846
 
-struct ComplexVectorPointer{
+struct ComplexVector{
 
-    ComplexVectorPointer(){
+    ComplexVector(){
     }
 
     void clear(){
@@ -64,31 +64,16 @@ public:
 
     // Appending the data
     void setInput(const RealVector &v);
-    ComplexVectorPointer getDFTResult(){return dft;}
+    ComplexVector getDFTResult(){return dft;}
     void doDFT() {dft.clear(); dft = calcDFT(input);}
-    ComplexVectorPointer calcDFT(ComplexVectorPointer x);
+    RealVector getModuleInBins(qint32 NBins);
+    ComplexVector vonHannWindow(int start = 0, int end = -1);
+    ComplexVector calcDFT(ComplexVector x);
 
 private:
 
-    ComplexVectorPointer dft;
-    ComplexVectorPointer input;
-
-//    // NOT USED
-//    ComplexVectorPointer twiddleFactors;
-//    QVector<quint64> bitReversal;
-//    quint64 Ns;
-
-
-//    // Getting the vectors and dbug functions
-//    ComplexVectorPointer getTwiddleFactors() {return twiddleFactors;}
-//    // Bit reversal. Not used.
-//    static quint64 reverseBitsOnN(quint64 value, quint64 N);
-//    // Pre calculates the twiddle factors. But was not used in the final implementation
-//    void prepare(qint32 twoExponent);
-//    // Printing a vector. For Debug
-//    static void printComplexVectorPointer(ComplexVectorPointer cvp,  QString file);
-//    void printBitReversalTable();
-
+    ComplexVector dft;
+    ComplexVector input;
 
 };
 

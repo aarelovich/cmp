@@ -4,9 +4,14 @@ SpectrumController::SpectrumController()
 {
     display = new SpectrumDisplay("");
     isRunning = false;
-    display->setScaleFactor(FFTSize);
+    ColoUiConfiguration c = display->getConfiguration();
+    c.set(SD_DISPLAY_BAR_NUM,BARS_TO_DISPLAY);
+    c.set(SD_SEGMENTS_IN_BAR,20);
+    display->setConfiguration(c);
+    this->songChanged();
 
 }
+
 
 void SpectrumController::run(){
     if (!dataBuffer.isEmpty()){
@@ -16,8 +21,16 @@ void SpectrumController::run(){
         dataBuffer.removeFirst();
         fft.doDFT();
 
-        QVector<qreal> mod = fft.getDFTResult().getAbsMod();
-        display->setSpectrum(mod.mid(0,mod.size()/2));
+        RealVector mod  = fft.getModuleInBins(GROUP_BAR_COUNT);
+
+        RealVector toDraw;
+        for (qint32 i = 0; i < BARS_TO_DISPLAY; i++){
+            peakAnalyzer.update(mod.at(i));
+            toDraw << mod.at(i)/peakAnalyzer.getAvg();
+        }
+
+        display->setSpectrum(toDraw);
+
 
         isRunning = false;
     }
@@ -28,85 +41,51 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
     // Only process stereo frames
     if (buffer.format().channelCount() != 2) return;
 
-    qreal peak;
 
     if (buffer.format().sampleType() == QAudioFormat::SignedInt){
 
-        //qWarning() << "Signed data" << counter; counter++;
-        switch (buffer.format().sampleSize()){
-        case 32:
-            peak = INT_MAX;
-            break;
-        case 16:
-            peak = SHRT_MAX;
-            break;
-        default:
-            peak = CHAR_MAX;
-            break;
-        }
+        //qWarning() << "Signed";
 
         QAudioBuffer::S16S *data = buffer.data<QAudioBuffer::S16S>();
-
-        for (qint32 i = 0; i < buffer.frameCount(); i++){
-            currentBuffer << data[i].left/peak;
-            if (currentBuffer.size() == FFTSize){
-                dataBuffer << currentBuffer;
-                currentBuffer.clear();
-                if (!isRunning) run();
-            }
-        }
-
+        bufferData(data,buffer.frameCount());
 
     }
     else if (buffer.format().sampleType() == QAudioFormat::UnSignedInt){
 
-        //qWarning() << "Unsigned data";
-
-        switch (buffer.format().sampleSize()){
-        case 32:
-            peak = UINT_MAX;
-            break;
-        case 16:
-            peak = USHRT_MAX;
-            break;
-        default:
-            peak = UCHAR_MAX;
-            break;
-        }
-
+        //qWarning() << "Unsigned";
         QAudioBuffer::S16U *data = buffer.data<QAudioBuffer::S16U>();
-
-        for (qint32 i = 0; i < buffer.frameCount(); i++){
-            currentBuffer << data[i].left/peak;
-            if (currentBuffer.size() == FFTSize){
-                dataBuffer << currentBuffer;
-                currentBuffer.clear();
-                if (!isRunning) run();
-            }
-        }
+        bufferData(data,buffer.frameCount());
 
     }
     else if(buffer.format().sampleType() == QAudioFormat::Float){
 
-        //qWarning() << "Float data";
-
-        peak = 1.00003;
+        //qWarning() << "Float";
         QAudioBuffer::S32F *data = buffer.data<QAudioBuffer::S32F>();
+        bufferData(data,buffer.frameCount());
 
-        for (qint32 i = 0; i < buffer.frameCount(); i++){
-            currentBuffer << data[i].left/peak;
-            if (currentBuffer.size() == FFTSize){
-                dataBuffer << currentBuffer;
-                currentBuffer.clear();
-                if (!isRunning) run();
-            }
-        }
-
+//        for (qint32 i = 0; i < buffer.frameCount(); i++){
+//            currentBuffer << data[i].left;
+//            if (currentBuffer.size() == FFT_SIZE){
+//                dataBuffer << currentBuffer;
+//                currentBuffer.clear();
+//                if (!isRunning) run();
+//            }
+//        }
 
     }
 
+}
 
-
+template<typename T>
+void SpectrumController::bufferData(T *data, qint32 N){
+    for (qint32 i = 0; i < N; i++){
+        currentBuffer << data[i].left;
+        if (currentBuffer.size() == FFT_SIZE){
+            dataBuffer << currentBuffer;
+            currentBuffer.clear();
+            if (!isRunning) run();
+        }
+    }
 }
 
 
