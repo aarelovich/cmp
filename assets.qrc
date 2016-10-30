@@ -1,8 +1,10 @@
 <RCC>
     <qresource prefix="/">
         <file>assets/ui_descriptor.cui</file>
-        <file>assets/unispace_b.ttf</file>
-        <file>assets/unispace_reg.ttf</file>
-        
+        <file>assets/fonts/Code New Roman b.otf</file>
+        <file>assets/fonts/Code New Roman.otf</file>
+        <file>assets/fonts/Entypo.otf</file>
+        <file>assets/fonts/software_tester_7.ttf</file>
+
     </qresource>
 </RCC>

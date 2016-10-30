@@ -13,7 +13,7 @@ public:
     SpectrumDisplay *getSpectrumDisplay(){return display;}
     void setAudioBuffer(QAudioBuffer buffer);
     void songChanged() {peakAnalyzer.reset(); display->resetPeakVars(); }
-
+    void enableDataBuffering(bool enable);
     void run();
 
 signals:
@@ -53,6 +53,7 @@ private:
     RealVector currentBuffer;
     bool isRunning;
     DFTEngine fft;
+    bool enableBuffering;
 
     SpectrumDisplay *display;
 

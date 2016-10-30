@@ -9,9 +9,16 @@ SpectrumController::SpectrumController()
     c.set(SD_SEGMENTS_IN_BAR,20);
     display->setConfiguration(c);
     this->songChanged();
-
+    enableBuffering = true;
 }
 
+void SpectrumController::enableDataBuffering(bool enable){
+    if (!enable){
+        dataBuffer.clear();
+        currentBuffer.clear();
+    }
+    enableBuffering = enable;
+}
 
 void SpectrumController::run(){
     if (!dataBuffer.isEmpty()){
@@ -38,9 +45,11 @@ void SpectrumController::run(){
 
 void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
 
+    // Used to momentarily stop the process.
+    if (!enableBuffering) return;
+
     // Only process stereo frames
     if (buffer.format().channelCount() != 2) return;
-
 
     if (buffer.format().sampleType() == QAudioFormat::SignedInt){
 
@@ -62,15 +71,6 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
         //qWarning() << "Float";
         QAudioBuffer::S32F *data = buffer.data<QAudioBuffer::S32F>();
         bufferData(data,buffer.frameCount());
-
-//        for (qint32 i = 0; i < buffer.frameCount(); i++){
-//            currentBuffer << data[i].left;
-//            if (currentBuffer.size() == FFT_SIZE){
-//                dataBuffer << currentBuffer;
-//                currentBuffer.clear();
-//                if (!isRunning) run();
-//            }
-//        }
 
     }
 
