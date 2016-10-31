@@ -10,6 +10,11 @@ SpectrumController::SpectrumController()
     display->setConfiguration(c);
     this->songChanged();
     enableBuffering = true;
+
+    writeFile = new QFile("accept.txt");
+    writeFile->open(QFile::WriteOnly);
+    writer = new QTextStream(writeFile);
+
 }
 
 void SpectrumController::enableDataBuffering(bool enable){
@@ -33,7 +38,9 @@ void SpectrumController::run(){
         RealVector toDraw;
         for (qint32 i = 0; i < BARS_TO_DISPLAY; i++){
             peakAnalyzer.update(mod.at(i));
-            toDraw << mod.at(i)/peakAnalyzer.getAvg();
+            //qWarning() << "Mod @ i" << mod.at(i) << "Average" << peakAnalyzer.getAvg();
+            toDraw << mod.at(i)/(peakAnalyzer.getAvg());
+            //qWarning() << "To draw" << toDraw.last();
         }
 
         display->setSpectrum(toDraw);
@@ -54,7 +61,6 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
     if (buffer.format().sampleType() == QAudioFormat::SignedInt){
 
         //qWarning() << "Signed";
-
         QAudioBuffer::S16S *data = buffer.data<QAudioBuffer::S16S>();
         bufferData(data,buffer.frameCount());
 
@@ -79,7 +85,21 @@ void SpectrumController::setAudioBuffer(QAudioBuffer buffer){
 template<typename T>
 void SpectrumController::bufferData(T *data, qint32 N){
     for (qint32 i = 0; i < N; i++){
+        //if (qAbs(data[i].left) > largest){largest = qAbs(data[i].left); qDebug() << "Largest" << largest;}
+        //currentBuffer << ((qreal)data[i].left/(largest));
+        //qWarning() << "Added data" << currentBuffer.last();
         currentBuffer << data[i].left;
+
+        if (datcounter < 100000){
+            *writer << data[i].left;
+            *writer << "\n";
+            datcounter++;
+        }
+        else if (writeFile->isOpen()){
+            qWarning() << "Closed file";
+            writeFile->close();
+        }
+
         if (currentBuffer.size() == FFT_SIZE){
             dataBuffer << currentBuffer;
             currentBuffer.clear();

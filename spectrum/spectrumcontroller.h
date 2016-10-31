@@ -12,7 +12,7 @@ public:
     explicit SpectrumController();
     SpectrumDisplay *getSpectrumDisplay(){return display;}
     void setAudioBuffer(QAudioBuffer buffer);
-    void songChanged() {peakAnalyzer.reset(); display->resetPeakVars(); }
+    void songChanged() {peakAnalyzer.reset(); display->resetPeakVars(); largest = 0;}
     void enableDataBuffering(bool enable);
     void run();
 
@@ -21,8 +21,8 @@ signals:
 private:
 
     const qint32 FFT_SIZE          = 1024;
-    const qint32 GROUP_BAR_COUNT   = 128;
-    const qint32 BARS_TO_DISPLAY   = 80;
+    const qint32 GROUP_BAR_COUNT   = 128;  // Originally 128
+    const qint32 BARS_TO_DISPLAY   = 80;  // Originally 80
 
     struct PeakAverager{
 
@@ -54,6 +54,11 @@ private:
     bool isRunning;
     DFTEngine fft;
     bool enableBuffering;
+
+    qreal largest;
+    qint32 datcounter;
+    QTextStream *writer;
+    QFile *writeFile;
 
     SpectrumDisplay *display;
 
