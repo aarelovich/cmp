@@ -36,3 +36,9 @@ Makefile*
 # QtCtreator CMake
 CMakeLists.txt.user
 
+# bin things
+bin/MOCS
+bin/OBJS
+bin/cmp
+bin/library.dat
+bin/settings.ini
