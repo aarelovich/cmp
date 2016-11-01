@@ -119,7 +119,7 @@ void FileLibrary::configureLibrary(ColoUiList *list, ColoUiSlider *seek){
     playList = list;
 
     // Creating vector
-    QFont data(FONT_INTERFACE,FONT_SIZE_INTERFACE);
+    QFont data(FONT_INTERFACE,FONT_SIZE_INTERFACE-10);
     QFont glyph(FONT_GLYPHS,FONT_SIZE_INTERFACE);
 
     ColoUiConfiguration c;

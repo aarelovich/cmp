@@ -89,10 +89,10 @@ void ColoUiWindow::on_coloUiManager_signal(){
             }
         }
     }
-    else if (info.elementID == E_VIEWLIST_LTPLAYLIST ){
+    else if (info.elementID == E_VIEWSETTINGS_LTPLAYLIST ){
     }
-    else if (info.elementID == E_VIEWLIST_LTSEARCHBOX ){        
-        ColoUiLineEdit * search = (ColoUiLineEdit *)(ui->getElement(E_VIEWLIST_LTSEARCHBOX));
+    else if (info.elementID == E_VIEWFILTERBOX_LTSEARCHBOX ){
+        ColoUiLineEdit * search = (ColoUiLineEdit *)(ui->getElement(E_VIEWFILTERBOX_LTSEARCHBOX));
         QString searchtext = search->getText();
         if (searchtext.size() >= 3){
             library.filterList(searchtext);
@@ -350,7 +350,7 @@ void ColoUiWindow::initialSetup(){
     }
 
     // Setting the defaults options
-    ddownPlaylist = (ColoUiDropdownList *)ui->getElement(E_VIEWLIST_LTPLAYLIST);
+    ddownPlaylist = (ColoUiDropdownList *)ui->getElement(E_VIEWSETTINGS_LTPLAYLIST);
     ddownPlayMode = (ColoUiDropdownList *)ui->getElement(E_VIEWSETTINGS_DPPLAYMODE);
     inputNameBox  = (ColoUiLineEdit *)ui->getElement(E_VIEWDIRLIST_LTINPUT);
     labelInputName  = (ColoUiLineEdit *)ui->getElement(E_VIEWDIRLIST_LABELINPUT);
