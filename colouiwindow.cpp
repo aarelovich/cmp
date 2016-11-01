@@ -6,6 +6,7 @@ ColoUiWindow::ColoUiWindow(QWidget *parent) : QMainWindow(parent)
     connect(&library,&FileLibrary::filesFound,this,&ColoUiWindow::on_fileScanner_update);
     connect(&library,&FileLibrary::finished,this,&ColoUiWindow::on_fileScanner_finished);
     connect(&messageTimer,&QTimer::timeout,this,&ColoUiWindow::on_messageTimer_timeout);
+    useSongBoardA = true;
 }
 
 void ColoUiWindow::setCentralWidget(QWidget *widget){
@@ -64,34 +65,39 @@ void ColoUiWindow::on_messageTimer_timeout(){
 
 void ColoUiWindow::on_coloUiManager_signal(){
     ColoUiSignalEventInfo info = ui->getSignalInfo();
-    if ( info.elementID == E_VIEWLOG){
-    }
-    else if (info.elementID == E_VIEWLOG_MTLOG ){
+    if (info.elementID == E_VIEWLOG_MTLOG ){
         if (info.type == ST_MOUSE_DOUBLE_CLICK){
             if (!lockLog){
                 ui->startTranstion(E_VIEWLOG,E_VIEWSPECTRUM);
             }
         }
     }
-    else if (info.elementID == E_VIEWLIST ){
-
-    }
     else if (info.elementID == E_VIEWLIST_LISTSONGLIST ){
         if (info.type == ST_MOUSE_DOUBLE_CLICK){
-            ColoUiSlider *vol = (ColoUiSlider *)ui->getElement(E_VOLUMEVIEW_SLVOLUME);
-            qint32 volume = vol->getCurrentValue();
-            if (!library.play(info.data.toPoint().x(),volume)){
+
+            ColoUiMultiLineText *board;
+            if (useSongBoardA){
+                board = (ColoUiMultiLineText *) ui->getElement(E_SONGINFOVIEWA_MTSONGINFOA);
+            }
+            else{
+                board = (ColoUiMultiLineText *) ui->getElement(E_SONGINFOVIEWB_MTSONGINFOA);
+            }
+            useSongBoardA = !useSongBoardA;
+
+            if (!library.play(info.data.toPoint().x(),board)){
                 logMessage("Could not play selected song",true);
             }
         }
     }
-    else if (info.elementID == E_VIEWLIST_LTFILTERNAME ){
-    }
     else if (info.elementID == E_VIEWLIST_LTPLAYLIST ){
     }
-    else if (info.elementID == E_VIEWLIST_LTSEARCHBOX ){
-    }
-    else if (info.elementID == E_VIEWTOOLBAR ){
+    else if (info.elementID == E_VIEWLIST_LTSEARCHBOX ){        
+        ColoUiLineEdit * search = (ColoUiLineEdit *)(ui->getElement(E_VIEWLIST_LTSEARCHBOX));
+        QString searchtext = search->getText();
+        if (searchtext.size() >= 3){
+            library.filterList(searchtext);
+        }
+        else library.filterList("");
     }
     else if (info.elementID == E_VIEWTOOLBAR_BTADDFOLDER ){
         if (info.type == ST_MOUSE_CLICK){
@@ -183,21 +189,42 @@ void ColoUiWindow::on_coloUiManager_signal(){
     }
     else if (info.elementID == E_VIEWCONFIRMATION_CONFIRMATIONDIALOG ){
     }
-    else if (info.elementID == E_VOLUMEVIEW ){
-    }
-    else if (info.elementID == E_VOLUMEVIEW_ICONVOLUME ){
-    }
     else if (info.elementID == E_VOLUMEVIEW_SLVOLUME ){
-        ColoUiSlider *vol = (ColoUiSlider *)ui->getElement(E_VOLUMEVIEW_SLVOLUME);
-        library.getMediaPlayer()->setVolume(100 - vol->getCurrentValue());
+        setVolumeFromSliderPosition();
     }
     else if (info.elementID == E_VIEWCONTROLS ){
     }
     else if (info.elementID == E_VIEWCONTROLS_BTNEXT ){
     }
     else if (info.elementID == E_VIEWCONTROLS_BTPAUSE ){
+        if (info.type == ST_MOUSE_CLICK){
+            switch (library.getMediaPlayer()->state()){
+            case QMediaPlayer::PlayingState:
+                library.getMediaPlayer()->pause();
+                break;
+            case QMediaPlayer::PausedState:
+                library.getMediaPlayer()->play();
+                break;
+            default:
+                return;
+            }
+        }
     }
     else if (info.elementID == E_VIEWCONTROLS_BTPLAY ){
+        if (info.type == ST_MOUSE_CLICK){
+            switch (library.getMediaPlayer()->state()){
+            case QMediaPlayer::PlayingState:
+                library.getMediaPlayer()->stop();
+                library.getMediaPlayer()->play();
+                break;
+            case QMediaPlayer::PausedState:
+                library.getMediaPlayer()->play();
+                break;
+            case QMediaPlayer::StoppedState:
+                // TODO get next song in playlist and play it
+                break;
+            }
+        }
     }
     else if (info.elementID == E_VIEWCONTROLS_BTPREVIOUS ){
     }
@@ -325,6 +352,11 @@ void ColoUiWindow::initialSetup(){
     // Setting the defaults options
     ddownPlaylist = (ColoUiDropdownList *)ui->getElement(E_VIEWLIST_LTPLAYLIST);
     ddownPlayMode = (ColoUiDropdownList *)ui->getElement(E_VIEWSETTINGS_DPPLAYMODE);
+    inputNameBox  = (ColoUiLineEdit *)ui->getElement(E_VIEWDIRLIST_LTINPUT);
+    labelInputName  = (ColoUiLineEdit *)ui->getElement(E_VIEWDIRLIST_LABELINPUT);
+    labelInputName->setVisible(false);
+    inputNameBox->setVisible(false);
+
     ddownPlaylist->setCurrentIndex(0); // The library
     ddownPlayMode->setCurrentIndex(SONG_ORDER_LOOP);
 
@@ -363,7 +395,8 @@ void ColoUiWindow::loadSettings(){
     }
 
     ColoUiSlider *vol = (ColoUiSlider *)ui->getElement(E_VOLUMEVIEW_SLVOLUME);
-    vol->setCurrentValue(100 - settings.value(SETTINGS_VOLUME,0).toInt());
+    vol->setCurrentValue(settings.value(SETTINGS_VOLUME,0).toInt());
+    setVolumeFromSliderPosition();
 }
 
 void ColoUiWindow::logMessage(QString string, bool timed, QString color){
@@ -374,4 +407,23 @@ void ColoUiWindow::logMessage(QString string, bool timed, QString color){
     if (timed){
         messageTimer.start(3000);
     }
+}
+
+void ColoUiWindow::setVolumeFromSliderPosition(){
+    ColoUiSlider *vol = (ColoUiSlider *)ui->getElement(E_VOLUMEVIEW_SLVOLUME);
+    qreal sp = vol->getCurrentValue();
+    qreal volume;
+//    if (sp >= 98) volume = 0;
+//    else volume = 50*qLn(100-sp)/qLn(10);
+    if (sp >= 98) volume = 0;
+    else volume = 100 - sp;
+    library.getMediaPlayer()->setVolume(volume);
+}
+
+void ColoUiWindow::setSliderPositionFromVolume(){
+    ColoUiSlider *vol = (ColoUiSlider *)ui->getElement(E_VOLUMEVIEW_SLVOLUME);
+    qreal volume = library.getMediaPlayer()->volume();
+    //qreal sp = 100 - qPow(10,volume/50);
+    qreal sp = 100 - volume;
+    vol->setCurrentValue(sp);
 }

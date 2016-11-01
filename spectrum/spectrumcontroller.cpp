@@ -11,7 +11,7 @@ SpectrumController::SpectrumController()
     this->songChanged();
     enableBuffering = true;
 
-    writeFile = new QFile("accept.txt");
+    writeFile = new QFile("accept_laptop.txt");
     writeFile->open(QFile::WriteOnly);
     writer = new QTextStream(writeFile);
 
@@ -88,7 +88,7 @@ void SpectrumController::bufferData(T *data, qint32 N){
         //if (qAbs(data[i].left) > largest){largest = qAbs(data[i].left); qDebug() << "Largest" << largest;}
         //currentBuffer << ((qreal)data[i].left/(largest));
         //qWarning() << "Added data" << currentBuffer.last();
-        currentBuffer << data[i].left;
+        currentBuffer << data[i].right;
 
         if (datcounter < 100000){
             *writer << data[i].left;

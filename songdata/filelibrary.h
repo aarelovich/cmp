@@ -18,13 +18,13 @@
 
 #include "../coloUi/colouilist.h"
 #include "../coloUi/colouislider.h"
+#include "../coloUi/colouimultilinetext.h"
 #include "globaldefs.h"
 #include "spectrum/spectrumcontroller.h"
 #include "structuredsongdata.h"
+#include "playlistmanager.h"
 
 typedef QMap<QString,quint32> FileTypeCount;
-typedef QMap<QString,BasicSongData> HashFileMap;
-
 
 class FileLibrary : public QThread
 {
@@ -45,8 +45,11 @@ public:
     // Change current playlist
     void changeCurrentPlaylist(QString playlist);
 
+    // Searching current playlist
+    void filterList(const QString & searchFor);
+
     // Start playing selected song. Returns true if the song exists
-    bool play(qint32 song, qint32 volume);
+    bool play(qint32 song, ColoUiMultiLineText *songboard);
     void updateSeekPosition(bool start);
 
     // Switches the type of looped play
@@ -96,18 +99,15 @@ private:
     ColoUiConfiguration configPlayColumn;
     ColoUiConfiguration configInfoColumn;
 
-    // The playlists
-    QHash<QString,QStringList> playlists;
-    qint32 currentPlayListIndex;
-
-    // Sorted songs
-    QStringList libraryKeys;
-
-    // The queue which, takes priority over the current playlist.
-    QStringList queue;
+    // The playlist manager
+    PlayListManager playlistManager;
 
     // Pointer the list
     ColoUiList *playList;
+
+    // Pointer to the song board
+    ColoUiMultiLineText *songBoard;
+    QFont songFont;
 
     // The Media player and data.
     QMediaPlayer player;
@@ -128,6 +128,9 @@ private:
     bool randomPlay;
 
     void recursiveSearch(QString dir);
+
+    // Update song board data
+    void updateSongBoard();
 
 };
 
