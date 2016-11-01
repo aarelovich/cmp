@@ -53,6 +53,9 @@ private:
     // Fast access ui elements data
     ColoUiDropdownList *ddownPlaylist;
     ColoUiDropdownList *ddownPlayMode;
+    ColoUiLineEdit *labelInputName;
+    ColoUiLineEdit *inputNameBox;
+    bool useSongBoardA;
 
     // For logging
     ColoUiMultiLineText *logger;
@@ -67,6 +70,9 @@ private:
     void loadSettings();
     void saveSettings();
 
+    // Volume managing
+    void setVolumeFromSliderPosition();
+    void setSliderPositionFromVolume();
 
 };
 

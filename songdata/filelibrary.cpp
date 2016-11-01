@@ -9,6 +9,8 @@ FileLibrary::FileLibrary()
     connect(&player,&QMediaPlayer::positionChanged,this,&FileLibrary::on_positionChanged);
     probe.setSource(&player);
     sliderIsBeingMoved = false;
+    songFont = QFont(FONT_INFORMATION);
+    songFont.setPixelSize(FONT_SIZE_INFORMATION);
 }
 
 void FileLibrary::addSearchPath(QString dir){
@@ -28,27 +30,89 @@ void FileLibrary::on_positionChanged(qint64 pos){
     if (sliderIsBeingMoved) return;
     qreal val = (qreal)pos*100.0/(qreal)player.duration();
     seekSlider->setCurrentValue(val);
+    updateSongBoard();
 }
 
 //--------------------------------- PLAYLIST MANAGEMENT ---------------------------
 
-bool FileLibrary::play(qint32 song, qint32 volume){
-    if ((song >= 0) && (song < libraryKeys.size())){
+bool FileLibrary::play(qint32 song, ColoUiMultiLineText *songboard){
+    QString songID = playlistManager.getSong(song);
+    if (!songID.isEmpty()){
+
+        songBoard = songboard;
+
         if (player.state() == QMediaPlayer::PlayingState){
             player.stop();
         }
-        BasicSongData bsd = fileMap.value(libraryKeys.at(song));
+        BasicSongData bsd = fileMap.value(songID);
         if (QFile(bsd.getFilePath()).exists()){
             currentSong = bsd;
-            currentSongID = libraryKeys.at(song);
+            currentSongID = songID;
             player.setMedia(QUrl::fromLocalFile(bsd.getFilePath()));
             player.play();
-            player.setVolume(volume);
             return true;
         }
         else return false;
     }
     return false;
+}
+
+void FileLibrary::updateSongBoard(){
+    songBoard->clearText(); // Clear all text
+    songBoard->appendFormattedText(currentSong.getSongName(),songFont,COLOR_WHITE);
+    songBoard->appendFormattedText(currentSong.getArtist(),songFont,COLOR_WHITE);
+    songBoard->appendFormattedText(currentSong.getAlbum(),songFont,COLOR_WHITE);
+    songBoard->appendFormattedText(QString::number(player.position()/1000) + "/" + QString::number(currentSong.getDuration()),songFont,COLOR_WHITE);
+}
+
+void FileLibrary::filterList(const QString &searchFor){
+
+    if (searchFor.isEmpty()){
+        //qDebug() << "Playlist size" << playlistManager.getCurrentPlaylistSize() << "row count" << playList->getRowCount();
+        if (playList->getRowCount() == playlistManager.getCurrentPlaylistSize()) return;
+    }
+
+    playlistManager.filterPlaylist(searchFor,fileMap);
+
+    playList->clearData();
+
+    ColoUiConfiguration c;
+
+    playlistManager.prepareIteration();
+
+    qint32 i = 0;
+
+    //qDebug() << "searchfor" << searchFor << "yielded" << playlistManager.getNumberOfResults();
+
+    while (true){
+
+        QString keyID = playlistManager.nextIteration();
+        if (keyID.isEmpty()) return; // DONE.
+
+        playList->insertRow();
+
+        // Playing
+        playList->setItemConfiguration(i,0,configPlayColumn);
+        // Title
+        c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getSongName());
+        playList->setItemConfiguration(i,1,c);
+        // Artist
+        c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getArtist());
+        playList->setItemConfiguration(i,2,c);
+        // Album
+        c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getAlbum());
+        playList->setItemConfiguration(i,3,c);
+        // Duration
+        c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getDurationAsText());
+        playList->setItemConfiguration(i,4,c);
+        // Track number
+        c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getTrackNumber());
+        playList->setItemConfiguration(i,5,c);
+
+        i++;
+
+    }
+
 }
 
 void FileLibrary::configureLibrary(ColoUiList *list, ColoUiSlider *seek){
@@ -75,49 +139,8 @@ void FileLibrary::configureLibrary(ColoUiList *list, ColoUiSlider *seek){
 
 void FileLibrary::changeCurrentPlaylist(QString name){
     Q_UNUSED(name);
-
-    playList->clearData();
-
-    if (name == ""){
-
-        // This is the library
-
-        if (libraryKeys.isEmpty()){
-            libraryKeys = fileMap.keys();
-        }
-
-        //qDebug() << "Library keys" << libraryKeys.size() << fileMap.size();
-
-        ColoUiConfiguration c;
-
-        for (qint32 i = 0; i < libraryKeys.size(); i++){
-
-            playList->insertRow();
-
-            QString keyID = libraryKeys.at(i);
-            //qDebug() << i << keyID << fileMap.value(keyID).getSongName();
-
-            // Playing
-            playList->setItemConfiguration(i,0,configPlayColumn);
-            // Title
-            c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getSongName());
-            playList->setItemConfiguration(i,1,c);
-            // Artist
-            c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getArtist());
-            playList->setItemConfiguration(i,2,c);
-            // Album
-            c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getAlbum());
-            playList->setItemConfiguration(i,3,c);
-            // Duration
-            c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getDurationAsText());
-            playList->setItemConfiguration(i,4,c);
-            // Track number
-            c = configInfoColumn; c.set(CPR_TEXT,fileMap.value(keyID).getTrackNumber());
-            playList->setItemConfiguration(i,5,c);
-
-        }
-    }
-
+    if (!playlistManager.setCurrentPlaylist(name)) return;
+    this->filterList("");
 }
 
 //--------------------------------- SONG DATA AND CONTROL -----------------------------------
@@ -137,8 +160,8 @@ void FileLibrary::run(){
         recursiveSearch(fileDirs.at(i));
     }
 
-    libraryKeys = songDataSorter.finalizeSorting();
-    qDebug() << "Finalized Library keys" << libraryKeys.size() << fileMap.size();
+    playlistManager.setLibrary(songDataSorter.finalizeSorting());
+
 
 }
 
@@ -231,7 +254,7 @@ bool FileLibrary::save(QString fileName){
 
     QDataStream stream(&file);
 
-    stream << libraryKeys;
+    playlistManager.save(&stream);
 
     stream << fileDirs;
 
@@ -257,7 +280,7 @@ bool FileLibrary::load(QString fileName){
 
     QDataStream stream(&file);
 
-    stream >> libraryKeys;
+    playlistManager.load(&stream);
 
     stream >> fileDirs;
 
@@ -276,6 +299,8 @@ bool FileLibrary::load(QString fileName){
     }
 
     file.close();
+
+    //qDebug() << "File map size" << fileMap.size();
 
     return true;
 

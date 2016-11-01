@@ -40,7 +40,8 @@ SOURCES += main.cpp \
     songdata/basicsongdata.cpp \
     songdata/filelibrary.cpp \
     direxplorer.cpp \
-    songdata/structuredsongdata.cpp
+    songdata/structuredsongdata.cpp \
+    songdata/playlistmanager.cpp
 
 HEADERS += \
     /home/ariela/repos/ColoUiDev/coloUi/colouibase.h \
@@ -74,7 +75,8 @@ HEADERS += \
     songdata/filelibrary.h \
     direxplorer.h \
     globaldefs.h \
-    songdata/structuredsongdata.h
+    songdata/structuredsongdata.h \
+    songdata/playlistmanager.h
 
 RESOURCES += assets.qrc
 
